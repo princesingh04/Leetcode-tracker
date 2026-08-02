@@ -891,6 +891,28 @@ body {
     margin: 1rem auto;
   }
 
+  .user-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .banner-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .banner-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .banner-actions .btn-icon-only {
+    flex: 0 0 auto;
+  }
+
   .stats-grid {
     grid-template-columns: 1fr 1fr;
   }
