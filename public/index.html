@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- SEO & Meta Tags -->
+  <title>LeetCode Rating Tracker — Zerotrac Integration & Sync</title>
+  <meta name="description" content="Track your LeetCode problem solving progress by rating and tier. Automatically sync with your LeetCode account, use Zerotrac ratings to practice efficiently, and master difficult algorithms.">
+  <meta name="keywords" content="LeetCode, algorithms, data structures, competitive programming, Zerotrac, coding tracker, interview preparation, software engineering">
+  <meta name="author" content="LeetCode Tracker">
+  <meta name="robots" content="index, follow">
+  
+  <!-- Open Graph / Social -->
+  <meta property="og:title" content="LeetCode Rating Tracker — Practice by Difficulty">
+  <meta property="og:description" content="Sync your LeetCode account and track your progress across dynamic rating tiers using Zerotrac data.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/favicon.jpg">
+  <meta property="og:url" content="http://localhost:3001">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LeetCode Rating Tracker">
+  <meta name="twitter:description" content="Track your LeetCode problem solving progress by rating and tier. Automatically sync with your LeetCode account.">
+  <meta name="twitter:image" content="/favicon.jpg">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="/favicon.jpg">
+  
+  <!-- Google Fonts & Font Awesome icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Navigation Bar -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="logo-icon">
+          <i class="fa-solid fa-code"></i>
+        </div>
+        <div class="brand-text">
+          <h1>LeetCode Tracker</h1>
+          <span class="sub-tag">Rating-wise Problem Practice</span>
+        </div>
+      </div>
+
+      <div class="nav-right" id="nav-user-section" style="display: flex; gap: 1rem; align-items: center;">
+        <button id="theme-toggle-btn" class="btn-icon-link" title="Toggle Theme" style="font-size: 1.25rem;">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+        <!-- User Info or Auth Button (rendered dynamically) -->
+        <button id="auth-btn" class="btn btn-primary">
+          <i class="fa-solid fa-user-lock"></i> Login / Register
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-container">
+      
+      <!-- User Banner / Sync Header (visible when logged in) -->
+      <section class="user-banner hidden" id="user-banner">
+        <div class="user-profile-info">
+          <div class="avatar-icon"><i class="fa-brands fa-leetcode"></i></div>
+          <div>
+            <div class="user-handle-wrap">
+              <span class="user-label">LeetCode User:</span>
+              <strong id="user-lc-username" class="user-handle">-</strong>
+              <button id="edit-lc-btn" class="btn-icon-link" title="Edit LeetCode Username">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+            </div>
+            <div class="sync-status">
+              <i class="fa-regular fa-clock"></i> Last synced: <span id="last-synced-time">Never</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="banner-actions">
+          <button id="sync-btn" class="btn btn-sync">
+            <i class="fa-solid fa-arrows-rotate" id="sync-icon"></i>
+            <span>Sync Recent</span>
+          </button>
+          <button id="deep-sync-btn" class="btn btn-primary" title="Sync All History using Cookie">
+            <i class="fa-solid fa-cloud-arrow-down" id="deep-sync-icon"></i>
+            <span>Deep Sync</span>
+          </button>
+          <button id="logout-btn" class="btn btn-secondary btn-icon-only" title="Logout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- Stats Overview Cards -->
+      <section class="stats-grid" id="stats-grid">
+        <div class="stat-card glass-card">
+          <div class="stat-header">
+            <span class="stat-title">Total Solved</span>
+            <i class="fa-solid fa-circle-check stat-icon text-success"></i>
+          </div>
+          <div class="stat-value" id="stat-total-solved">0 <span class="stat-total">/ 0</span></div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="stat-total-progress" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="stat-card glass-card">
+          <div class="stat-header">
+            <span class="stat-title">Medium Tier (1500–1800)</span>
+            <i class="fa-solid fa-fire-flame-curved stat-icon text-warning"></i>
+          </div>
+          <div class="stat-value" id="stat-medium-solved">0 <span class="stat-total">/ 0</span></div>
+          <div class="progress-bar-container">
+            <div class="progress-bar progress-warning" id="stat-medium-progress" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="stat-card glass-card">
+          <div class="stat-header">
+            <span class="stat-title">Hard Tier (1800–2100)</span>
+            <i class="fa-solid fa-bolt stat-icon text-danger"></i>
+          </div>
+          <div class="stat-value" id="stat-hard-solved">0 <span class="stat-total">/ 0</span></div>
+          <div class="progress-bar-container">
+            <div class="progress-bar progress-danger" id="stat-hard-progress" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="stat-card glass-card">
+          <div class="stat-header">
+            <span class="stat-title">Master Tier (2100+)</span>
+            <i class="fa-solid fa-trophy stat-icon text-purple"></i>
+          </div>
+          <div class="stat-value" id="stat-master-solved">0 <span class="stat-total">/ 0</span></div>
+          <div class="progress-bar-container">
+            <div class="progress-bar progress-purple" id="stat-master-progress" style="width: 0%"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filter Controls Toolbar -->
+      <section class="toolbar glass-card">
+        <!-- Preset Rating Buckets -->
+        <div class="filter-group">
+          <label class="group-label">Rating Preset:</label>
+          <div class="preset-buttons" id="preset-buttons">
+            <button class="preset-btn active" data-min="0" data-max="4000">All</button>
+            <button class="preset-btn" data-min="0" data-max="1400">&lt; 1400</button>
+            <button class="preset-btn" data-min="1400" data-max="1600">1400–1600</button>
+            <button class="preset-btn highlight" data-min="1600" data-max="1800">1600–1800</button>
+            <button class="preset-btn" data-min="1800" data-max="2000">1800–2000</button>
+            <button class="preset-btn" data-min="2000" data-max="2200">2000–2200</button>
+            <button class="preset-btn" data-min="2200" data-max="4000">2200+</button>
+          </div>
+        </div>
+
+        <!-- Custom Range & Search -->
+        <div class="filter-row">
+          <!-- Custom Rating Range Inputs -->
+          <div class="custom-range-inputs">
+            <span class="range-label">Range:</span>
+            <input type="number" id="min-rating" placeholder="Min" min="800" max="3500" class="input-field range-input">
+            <span class="range-dash">–</span>
+            <input type="number" id="max-rating" placeholder="Max" min="800" max="3500" class="input-field range-input">
+            <button id="apply-range-btn" class="btn btn-sm btn-secondary">Apply</button>
+          </div>
+
+          <!-- Solved Filter -->
+          <div class="solved-filter-group">
+            <label class="radio-tab active" data-status="all">
+              <input type="radio" name="solvedFilter" value="all" checked hidden> All
+            </label>
+            <label class="radio-tab" data-status="unsolved">
+              <input type="radio" name="solvedFilter" value="unsolved" hidden> Unsolved
+            </label>
+            <label class="radio-tab" data-status="solved">
+              <input type="radio" name="solvedFilter" value="solved" hidden> Solved
+            </label>
+          </div>
+
+          <!-- Text Search Box -->
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search by title, ID, contest..." class="input-field">
+          </div>
+        </div>
+      </section>
+
+      <!-- Problems Table -->
+      <section class="table-container glass-card">
+        <div class="table-meta">
+          <span class="showing-count">Showing <strong id="visible-count">0</strong> problems</span>
+          <div class="sort-info">
+            <label for="sort-select" style="margin-right: 0.5rem;">Sort by:</label>
+            <select id="sort-select" class="input-field" style="width: auto; padding: 0.35rem 0.75rem; display: inline-block; background-color: var(--card-bg); font-size: 0.9rem;">
+              <option value="rating-desc">Rating (High → Low)</option>
+              <option value="rating-asc">Rating (Low → High)</option>
+              <option value="id-asc">ID (Low → High)</option>
+              <option value="id-desc">ID (High → Low)</option>
+              <option value="title-asc">Title (A → Z)</option>
+              <option value="title-desc">Title (Z → A)</option>
+              <option value="contest-desc">Contest (New → Old)</option>
+              <option value="contest-asc">Contest (Old → New)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="problems-table">
+            <thead>
+              <tr>
+                <th class="col-check">Status</th>
+                <th class="col-id sortable" data-sort="id">
+                  ID <i class="fa-solid fa-sort sort-icon"></i>
+                </th>
+                <th class="col-title sortable" data-sort="title">
+                  Problem Title <i class="fa-solid fa-sort sort-icon"></i>
+                </th>
+                <th class="col-rating sortable active-sort" data-sort="rating">
+                  Rating <i class="fa-solid fa-sort-down sort-icon"></i>
+                </th>
+                <th class="col-contest sortable" data-sort="contest">
+                  Contest <i class="fa-solid fa-sort sort-icon"></i>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="problems-tbody">
+              <!-- Loading Skeleton -->
+              <tr class="loading-row">
+                <td colspan="5" class="text-center">
+                  <div class="spinner"></div>
+                  <p>Loading problem ratings from Zerotrac...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Auth Modal (Google Sign In & Password Auth) -->
+    <div id="auth-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-card">
+        <button class="modal-close" id="close-auth-modal">&times;</button>
+        
+        <!-- Google Sign In Button -->
+        <div class="google-auth-box" style="display: flex; justify-content: center; margin-bottom: 1rem;">
+          <div id="g_id_onload"
+               data-client_id="816337301608-uaso1rth347t9mklnu0h65c9pcghum76.apps.googleusercontent.com"
+               data-context="signin"
+               data-ux_mode="popup"
+               data-callback="handleGoogleCredentialResponse"
+               data-auto_prompt="false">
+          </div>
+          <div class="g_id_signin"
+               data-type="standard"
+               data-shape="rectangular"
+               data-theme="filled_black"
+               data-text="signin_with"
+               data-size="large"
+               data-logo_alignment="left">
+          </div>
+        </div>
+
+        <div class="divider">
+          <span>OR USE USERNAME</span>
+        </div>
+
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tab-login-btn">Login</button>
+          <button class="auth-tab" id="tab-register-btn">Register</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form">
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <input type="text" id="login-username" class="input-field" placeholder="Enter your username">
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" class="input-field" placeholder="Enter password">
+          </div>
+
+          <div class="form-error hidden" id="login-error"></div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="fa-solid fa-right-to-bracket"></i> Login
+          </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="auth-form hidden">
+          <div class="form-group">
+            <label for="reg-username">Username</label>
+            <input type="text" id="reg-username" class="input-field" placeholder="Choose a username">
+          </div>
+
+          <div class="form-group">
+            <label for="reg-password">Password</label>
+            <input type="password" id="reg-password" class="input-field" placeholder="Choose a password">
+          </div>
+
+          <div class="form-group">
+            <label for="reg-leetcode">
+              LeetCode Handle / Username
+              <span class="tooltip-icon" title="Your public username on leetcode.com"><i class="fa-solid fa-circle-info"></i></span>
+            </label>
+            <input type="text" id="reg-leetcode" class="input-field" placeholder="e.g. touriste, lee215, your_handle">
+          </div>
+
+          <div class="form-error hidden" id="reg-error"></div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="fa-solid fa-user-plus"></i> Register
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal to Set / Prompt LeetCode Username -->
+    <div id="leetcode-prompt-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-card">
+        <button class="modal-close" id="close-lc-modal">&times;</button>
+        <h2>Connect LeetCode Account</h2>
+        <p class="auth-desc">Enter your LeetCode username to automatically sync your solved questions and ratings.</p>
+
+        <form id="leetcode-handle-form">
+          <div class="form-group">
+            <label for="modal-lc-username">LeetCode Username</label>
+            <input type="text" id="modal-lc-username" class="input-field" placeholder="e.g. princevij04, lee215, tourist" required>
+          </div>
+
+          <div class="form-error hidden" id="lc-prompt-error"></div>
+
+          <button type="submit" class="btn btn-sync btn-block" id="save-lc-handle-btn">
+            <i class="fa-solid fa-arrows-rotate"></i> Save & Sync Progress
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Deep Sync Modal -->
+    <div id="deep-sync-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-card">
+        <button class="modal-close" id="close-deep-sync-modal">&times;</button>
+        <h2>Deep Sync History</h2>
+        <p class="auth-desc" style="font-size: 0.9rem; margin-bottom: 1rem;">
+          To sync all your 1000+ past problems, paste your active <strong>LEETCODE_SESSION</strong> cookie below.
+          <br><br>
+          <span style="opacity: 0.8; font-size: 0.8rem;">
+            <em>How to get it:</em> Open LeetCode.com, press F12, go to Application > Cookies, and copy the value for LEETCODE_SESSION. We only use this once and do not store it!
+          </span>
+        </p>
+
+        <form id="deep-sync-form">
+          <div class="form-group">
+            <label for="session-cookie-input">LEETCODE_SESSION Cookie</label>
+            <input type="password" id="session-cookie-input" class="input-field" placeholder="Paste your cookie here..." required>
+          </div>
+
+          <div class="form-error hidden" id="deep-sync-error"></div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="submit-deep-sync-btn">
+            <i class="fa-solid fa-cloud-arrow-down"></i> Start Deep Sync
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+      <i id="toast-icon" class="fa-solid fa-circle-check"></i>
+      <span id="toast-message">Message</span>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

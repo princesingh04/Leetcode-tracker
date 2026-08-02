@@ -1,0 +1,21 @@
+{
+  "name": "leetcode-tracker",
+  "version": "1.0.0",
+  "description": "LeetCode problem tracker with Zerotrac ratings and LeetCode account sync",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "google-auth-library": "^11.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.3.0",
+    "node-fetch": "^3.3.2"
+  }
+}
