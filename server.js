@@ -25,6 +25,34 @@ app.use(express.json());
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serverless Initialization Middleware
+let isDbConnected = false;
+let isZerotracLoaded = false;
+
+app.use('/api', async (req, res, next) => {
+  try {
+    // 1. Ensure DB Connection
+    if (!isDbConnected) {
+      console.log(`[Serverless] Connecting to MongoDB...`);
+      const db = await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
+      isDbConnected = db.connections[0].readyState === 1;
+      console.log(`[Serverless] MongoDB Connected.`);
+    }
+    
+    // 2. Ensure Zerotrac Data
+    if (!isZerotracLoaded) {
+      console.log(`[Serverless] Pre-loading Zerotrac data...`);
+      await fetchZerotracData();
+      isZerotracLoaded = true;
+    }
+    
+    next();
+  } catch (err) {
+    console.error('[Serverless] Initialization Error:', err);
+    res.status(500).json({ error: 'Server initialization failed. Please try again.' });
+  }
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/problems', problemRoutes);
@@ -59,26 +87,24 @@ function listenOnPort(port) {
   });
 }
 
-// Database connection & Startup
+// Database connection & Startup (For local development only)
 async function startServer() {
+  if (process.env.VERCEL) return; // Skip local startup on Vercel
+
   try {
     console.log(`Connecting to MongoDB at: ${MONGODB_URI}...`);
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000
-    });
+    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
+    isDbConnected = true;
     console.log('MongoDB connected successfully!');
   } catch (err) {
     console.warn(`[MongoDB Warning] Could not connect to MongoDB: ${err.message}`);
-    console.warn('The app will still run, but user registration/login requires a running MongoDB database.');
   }
 
   // Pre-load Zerotrac problem ratings
   await fetchZerotracData();
+  isZerotracLoaded = true;
 
-  // If not running on Vercel serverless environment, start the listener
-  if (!process.env.VERCEL) {
-    listenOnPort(PORT);
-  }
+  listenOnPort(PORT);
 }
 
 startServer();
