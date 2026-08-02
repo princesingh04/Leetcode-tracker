@@ -18,7 +18,9 @@ const state = {
     key: 'rating',
     asc: false
   },
-  displayLimit: 250,
+  page: 1,
+  limit: 50,
+  filteredProblems: [], // Cache for pagination
   theme: localStorage.getItem('theme') || 'dark'
 };
 
@@ -56,8 +58,15 @@ const elements = {
   // Table
   visibleCount: document.getElementById('visible-count'),
   sortSelect: document.getElementById('sort-select'),
+  tableHeaders: document.querySelectorAll('.problems-table th.sortable'),
   problemsTbody: document.getElementById('problems-tbody'),
-  sortHeaders: document.querySelectorAll('.problems-table th.sortable'),
+
+  // Pagination
+  paginationContainer: document.getElementById('pagination-container'),
+  pageCurrent: document.getElementById('page-current'),
+  pageTotal: document.getElementById('page-total'),
+  btnPrevPage: document.getElementById('btn-prev-page'),
+  btnNextPage: document.getElementById('btn-next-page'),
 
   // Auth Modal
   authModal: document.getElementById('auth-modal'),
@@ -151,6 +160,25 @@ function setupEventListeners() {
     elements.themeToggleBtn.addEventListener('click', toggleTheme);
   }
 
+  // Pagination Buttons
+  if (elements.btnPrevPage) {
+    elements.btnPrevPage.addEventListener('click', () => {
+      if (state.page > 1) {
+        state.page--;
+        renderTable();
+      }
+    });
+  }
+  if (elements.btnNextPage) {
+    elements.btnNextPage.addEventListener('click', () => {
+      const totalPages = Math.ceil(state.filteredProblems.length / state.limit) || 1;
+      if (state.page < totalPages) {
+        state.page++;
+        renderTable();
+      }
+    });
+  }
+
   // Preset Buttons
   elements.presetButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -160,7 +188,7 @@ function setupEventListeners() {
       state.filters.maxRating = parseInt(btn.dataset.max, 10);
       elements.minRatingInput.value = state.filters.minRating > 0 ? state.filters.minRating : '';
       elements.maxRatingInput.value = state.filters.maxRating < 4000 ? state.filters.maxRating : '';
-      renderTable();
+      applyFilters();
     });
   });
 
@@ -172,7 +200,7 @@ function setupEventListeners() {
     state.filters.maxRating = maxVal;
     
     elements.presetButtons.forEach(b => b.classList.remove('active'));
-    renderTable();
+    applyFilters();
   });
 
   // Solved Radio Filters
@@ -181,7 +209,7 @@ function setupEventListeners() {
       elements.radioTabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       state.filters.status = tab.dataset.status;
-      renderTable();
+      applyFilters();
     });
   });
 
@@ -191,12 +219,12 @@ function setupEventListeners() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
       state.filters.search = e.target.value.toLowerCase().trim();
-      renderTable();
+      applyFilters();
     }, 250);
   });
 
   // Sort Table Headers (sync with dropdown)
-  elements.sortHeaders.forEach(th => {
+  elements.tableHeaders.forEach(th => {
     th.addEventListener('click', () => {
       const sortKey = th.dataset.sort;
       if (state.sort.key === sortKey) {
@@ -208,7 +236,7 @@ function setupEventListeners() {
       }
       
       syncSortUI();
-      renderTable();
+      applyFilters();
     });
   });
 
@@ -220,7 +248,7 @@ function setupEventListeners() {
       state.sort.asc = (dir === 'asc');
       
       syncSortUI();
-      renderTable();
+      applyFilters();
     });
   }
 }
@@ -291,7 +319,7 @@ async function handleSaveLeetCodeHandle(e) {
     showLcPromptModal(false);
     updateUserBanner();
     updateStats();
-    renderTable();
+    applyFilters();
 
     showToast(`LeetCode handle updated & synced (${data.user.solvedCount} solved)!`, 'fa-circle-check');
   } catch (err) {
@@ -322,7 +350,7 @@ async function fetchUserDataAndProblems() {
 
     updateUserBanner();
     updateStats();
-    renderTable();
+    applyFilters();
   } catch (err) {
     showToast('Failed to load data from server', 'fa-triangle-exclamation');
     fetchGuestProblems();
@@ -337,15 +365,14 @@ async function fetchGuestProblems() {
     const data = await res.json();
     state.allProblems = data.problems || [];
     updateStats();
-    renderTable();
+    applyFilters();
   } catch (err) {
     console.error('Error fetching guest problems:', err);
     elements.problemsTbody.innerHTML = `<tr><td colspan="5" class="text-center">Failed to load problem ratings. Please refresh.</td></tr>`;
   }
 }
 
-// Render Table Rows
-function renderTable() {
+function applyFilters() {
   if (state.allProblems.length === 0) return;
 
   // Filter problems
@@ -394,24 +421,45 @@ function renderTable() {
     return 0;
   });
 
+  // Save filtered results to state for pagination
+  state.filteredProblems = filtered;
+  state.page = 1; // Reset to page 1 on new filter
+
+  renderTable();
+}
+
+// Render Table Rows
+function renderTable() {
+  const filtered = state.filteredProblems;
   elements.visibleCount.textContent = filtered.length;
+  elements.problemsTbody.innerHTML = '';
 
   if (filtered.length === 0) {
     elements.problemsTbody.innerHTML = `
       <tr>
-        <td colspan="5" class="text-center">
-          <i class="fa-solid fa-folder-open" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.4;"></i>
-          <p>No problems match your current filters.</p>
-        </td>
+        <td colspan="5" class="text-center">No problems found matching criteria.</td>
       </tr>
     `;
+    elements.paginationContainer.style.display = 'none';
     return;
   }
 
-  // Display top slice for rendering speed
-  const slice = filtered.slice(0, state.displayLimit);
+  // Pagination Logic
+  const totalPages = Math.ceil(filtered.length / state.limit) || 1;
+  if (state.page > totalPages) state.page = totalPages;
+  
+  elements.pageCurrent.textContent = state.page;
+  elements.pageTotal.textContent = totalPages;
+  elements.btnPrevPage.disabled = state.page === 1;
+  elements.btnNextPage.disabled = state.page === totalPages;
+  
+  elements.paginationContainer.style.display = 'flex';
 
-  elements.problemsTbody.innerHTML = slice.map(p => {
+  const startIndex = (state.page - 1) * state.limit;
+  const endIndex = Math.min(startIndex + state.limit, filtered.length);
+  const pageData = filtered.slice(startIndex, endIndex);
+
+  elements.problemsTbody.innerHTML = pageData.map(p => {
     const isSolved = state.solvedSet.has(p.id);
     const badgeClass = getRatingBadgeClass(p.rating);
     const problemUrl = `https://leetcode.com/problems/${p.titleSlug}/`;
@@ -482,7 +530,7 @@ window.handleToggleSolved = async function(problemId, isChecked) {
     if (!res.ok) throw new Error('Failed to update');
     const data = await res.json();
     state.solvedSet = new Set(data.solvedIds);
-    updateStats();
+    applyFilters(); // This will populate state.filteredProblems and render
   } catch (err) {
     showToast('Could not save solved state to database', 'fa-triangle-exclamation');
   }

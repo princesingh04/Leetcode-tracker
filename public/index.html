@@ -242,6 +242,21 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container" id="pagination-container" style="display: none; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+          <div class="pagination-info" style="color: var(--text-muted); font-size: 0.9rem;">
+            Page <strong id="page-current">1</strong> of <strong id="page-total">1</strong>
+          </div>
+          <div class="pagination-buttons" style="display: flex; gap: 0.5rem;">
+            <button id="btn-prev-page" class="btn btn-secondary btn-sm" disabled>
+              <i class="fa-solid fa-chevron-left"></i> Previous
+            </button>
+            <button id="btn-next-page" class="btn btn-secondary btn-sm">
+              Next <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
       </section>
     </main>
 
