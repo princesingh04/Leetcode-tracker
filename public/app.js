@@ -321,7 +321,12 @@ async function handleSaveLeetCodeHandle(e) {
     updateStats();
     applyFilters();
 
-    showToast(`LeetCode handle updated & synced (${data.user.solvedCount} solved)!`, 'fa-circle-check');
+    showToast(`LeetCode handle updated! Synced ${data.user.solvedCount} problems.`, 'fa-circle-check');
+    
+    // Alert the user about the 20 limits if they haven't deep synced
+    setTimeout(() => {
+      showToast('Public Sync only gets your last 20 submissions. Use Deep Sync to fetch your entire history!', 'fa-circle-info', 6000);
+    }, 1500);
   } catch (err) {
     elements.lcPromptError.textContent = err.message;
     elements.lcPromptError.classList.remove('hidden');
@@ -858,14 +863,14 @@ function switchAuthTab(tab) {
   }
 }
 
-function showToast(message, iconClass = 'fa-circle-check') {
+function showToast(message, iconClass = 'fa-circle-check', duration = 3500) {
   elements.toastMessage.textContent = message;
   elements.toastIcon.className = `fa-solid ${iconClass}`;
   elements.toast.classList.remove('hidden');
 
   setTimeout(() => {
     elements.toast.classList.add('hidden');
-  }, 3500);
+  }, duration);
 }
 
 function formatDate(dateStr) {
